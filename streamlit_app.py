@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import my_index
 import modeling
+import numpy as np
 
 print("pandas version: ", pd.__version__)
 pd.set_option('display.max_columns', 100)
@@ -32,8 +33,25 @@ if __name__ == "__main__":
 
     if len(coin_name)>=1:
         st.header("Chart Data")
-        data_load_state = st.text('Generation data...')
-        df = coin_prediction(coin_name).reset_index(drop=True)
-        df.set_index('x', inplace=True)
-        st.line_chart(df)
-        data_load_state.text("Done")
+        count = 0
+        res = pd.DataFrame()
+        while True:
+            if count ==0:
+                data_load_state = st.text('Generation data:{}'.format(count))
+            else:
+                data_load_state = data_load_state.text('Generation data:{}'.format(count))
+            df = coin_prediction(coin_name).reset_index(drop=True)
+            df.set_index('x', inplace=True)
+            res = pd.concat([res, df], axis=1).iloc[:,-10:]
+            mean = res.mean(axis=1)
+            std = res.std(axis=1)
+            n = res.count(axis=1)
+            lower = mean - 1.95 * std/np.sqrt(n)
+            higher = mean + 1.95 * std/np.sqrt(n)
+            plot_df = pd.concat([mean, lower, higher], axis=1)
+            if count==0:
+                element = st.line_chart(plot_df)
+            else:
+                element = element.line_chart(plot_df)
+            count += 1
+            data_load_state.text("Done:{}".format(count))
